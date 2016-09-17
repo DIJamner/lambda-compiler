@@ -13,35 +13,12 @@
 ;; - '(move addr addr)
 ;; ...
 
-(define (label-generator x)
-  (λ () (values (string->symbol (string-append "label"
-                                               (number->string x)))
-          (label-generator (add1 x)))))
-;;tests
-
-(define test-gen-0 (label-generator 0))
-(define-values [test-label-1 test-gen-1] (test-gen-0))
-(define-values [test-gen-l test-gen-r] (split-generator test-gen-1))
-(define-values [test-label-l test-next-gen-l] (test-gen-l))
-(define-values [test-label-r test-next-gen-r] (test-gen-r))
-(define-values [test-label-l-2 test-next-gen-l-2] (test-next-gen-l))
-(define-values [test-label-r-2 test-next-gen-r-2] (test-next-gen-r))
-
-(check-not-equal? test-label-l test-label-r)
-(check-not-equal? test-label-1 test-label-l)
-(check-not-equal? test-label-1 test-label-r)
-(check-not-equal? test-label-l-2 test-label-r)
-(check-not-equal? test-label-l-2 test-label-l)
-(check-not-equal? test-label-r-2 test-label-r)
-(check-not-equal? test-label-r-2 test-label-l)
-
-
-
-;; end tests
+(define (gen-label)
+  (gensym "label"))
 
 (define (compile exp)
   (define-values [res body-max-index]
-    (compile-exp (label-generator 0) exp 'res))
+    (compile-exp exp 'res))
   (if (= body-max-index 0)
       (print-assem (append
                     '(.text)
@@ -85,7 +62,7 @@
 ;; produces two values: list of generated code blocks and the highest free index
 ;;   relative to the top level
 ;; position: either 'res or 'arg
-(define (compile-exp label-gen exp position)
+(define (compile-exp exp position)
   (define-values [codeAddr envAddr]
            (if (equal? position 'res)
                (values '$v0 '$v1) ;; value addresses
@@ -94,10 +71,10 @@
          (values (gen-load-var exp codeAddr envAddr '$a0) exp)]
         
         [(lam? exp)
-         (define-values [fun-label next-gen-1] (label-gen))
-         (define-values [end-label next-gen-2] (next-gen-1))
+         (define fun-label (gen-label))
+         (define end-label (gen-label))
          (define-values [body-code body-max-index]
-           (compile-exp next-gen-2 (lam-body exp) 'res))
+           (compile-exp (lam-body exp) 'res))
          (define make-env-code
            (if (= body-max-index 0)
                ;; empty environment, use 0
@@ -123,15 +100,14 @@
                  (max (sub1 body-max-index) 0))]
              
         [(list? exp)
-         (define-values [gen-l gen-r] (split-generator label-gen))
-         
          (define fun-exp (first exp))
          (define-values [fun-code fun-max-index]
-           (compile-exp gen-l fun-exp 'res))
+           (compile-exp fun-exp 'res))
          
          (define arg-exp (second exp))
          (define-values [arg-code arg-max-index]
-           (compile-exp gen-r arg-exp 'arg))
+           (compile-exp arg-exp 'arg))
+         
          (values (append fun-code
                          arg-code
                          '((move $a0 $v1)
