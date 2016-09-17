@@ -35,11 +35,11 @@
                       ;; builtin print function
                       print
                       (li $v0 4)
-                      ;; $a1 should be the address of a string
-                      (move $a0 $a1)
+                      ;; $a2 should be the address of a string
+                      (move $a0 $a2)
                       syscall
                       ;; indicate no return value
-                      (la $v0 not_a_func_err)
+                      (la $v0 not_a_func)
                       (move $v1 $zero)
                       (jr $ra)
                       ;; builtin error function
@@ -134,8 +134,8 @@
                    ,label
                    (.asciiz ,exp)
                    .text
-                   (la ,codeAddr ,label)
-                   (move ,envAddr $zero))
+                   (la ,codeAddr not_a_func)
+                   (la ,envAddr ,label))
                  0)]
         [(list? exp)
          (define fun-exp (first exp))
