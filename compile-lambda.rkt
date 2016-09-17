@@ -16,15 +16,39 @@
 (define (gen-label)
   (gensym "label"))
 
+(define (gen-string-label)
+  (gensym "string"))
+
 (define (compile exp)
   (define-values [res body-max-index]
     (compile-exp exp 'res))
   (if (= body-max-index 0)
       (print-assem (append
-                    '(.text)
+                    '(.data
+                      (.align 2)
+                      not_a_func_err (.asciiz "attempted to call a non-function")
+                      .text)
                     res
                     '((li $v0 10)
                       (li $a0 0)
+                      syscall
+                      ;; builtin print function
+                      print
+                      (li $v0 4)
+                      ;; $a1 should be the address of a string
+                      (move $a0 $a1)
+                      syscall
+                      ;; indicate no return value
+                      (la $v0 not_a_func_err)
+                      (move $v1 $zero)
+                      (jr $ra)
+                      ;; builtin error function
+                      not_a_func
+                      (li $v0 4)
+                      (la $a0 not_a_func_err)
+                      syscall
+                      (li $v0 10)
+                      (li $a0 1)
                       syscall)))
       (error (string-append "Program is not closed. Greatest index is "
                             (number->string body-max-index)))))
@@ -37,14 +61,21 @@
 
 (define/match (print-instr instr)
   [('.text) ".text\n"]
+  [('.data) ".data\n"]
   [('syscall) "syscall\n"]
+  ;; works for both instructions and directives
   [((cons instr args)) (string-append (symbol->string instr) " "
                                  (print-instr-args args) "\n")]
   [(label) #:when (symbol? label) (string-append (symbol->string label) ":\n")])
 
+(define (token->string tok)
+  (cond [(symbol? tok) (symbol->string tok)]
+        [(number? tok) (number->string tok)]
+        [(string? tok) (string-append "\"" tok "\"")]))
+
 (define (print-instr-args args)
   (apply string-append
-         (cons (symbol->string (first args)) ;; the first arg is always a symbol
+         (cons (token->string (first args)) ;; the first arg is always a symbol
                (map (λ (arg)
                       (if (list? arg)
                           (string-append ", "
@@ -53,9 +84,7 @@
                                          (symbol->string (second arg))
                                          ")")
                           (string-append ", "
-                                         (if (symbol? arg)
-                                             (symbol->string arg)
-                                             (number->string arg))))) 
+                                         (token->string arg)))) 
                     (rest args)))))
 
 ;; compiles closed expressions
@@ -98,7 +127,16 @@
                          `((move ,envAddr $s0)
                            (la ,codeAddr ,fun-label)))
                  (max (sub1 body-max-index) 0))]
-             
+        [(string? exp)
+         (define label (gen-string-label))
+         (values `(.data
+                   (.align 2)
+                   ,label
+                   (.asciiz ,exp)
+                   .text
+                   (la ,codeAddr ,label)
+                   (move ,envAddr $zero))
+                 0)]
         [(list? exp)
          (define fun-exp (first exp))
          (define-values [fun-code fun-max-index]
@@ -107,13 +145,15 @@
          (define arg-exp (second exp))
          (define-values [arg-code arg-max-index]
            (compile-exp arg-exp 'arg))
-         
          (values (append fun-code
                          arg-code
                          '((move $a0 $v1)
                            (jalr $v0)))
                  (max fun-max-index arg-max-index))]
-         
+        [(equal? exp 'print)
+         (values `((la ,codeAddr print)
+                   (move ,envAddr $zero))
+                 0)]
         [else (error "Invalid input")]))
              
 
