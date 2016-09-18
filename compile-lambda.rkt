@@ -148,7 +148,9 @@
          (values (append fun-code
                          arg-code
                          '((move $a0 $v1)
-                           (jalr $v0)))
+                           (sw $ra (8 $sp))
+                           (jalr $v0)
+                           (lw $ra (8 $sp))))
                  (max fun-max-index arg-max-index))]
         [(equal? exp 'print)
          (values `((la ,codeAddr print)
@@ -161,7 +163,7 @@
 (define (gen-prologue fun-label end-label)
   `((j ,end-label)
     ,fun-label
-    (addi $sp $sp -8)
+    (addi $sp $sp ,(alloc 3))
     (sw $a0 (0 $sp))
     (sw $s0 (4 $sp))))
 
@@ -169,11 +171,16 @@
 (define (gen-epilogue end-label)
   ;; restore s0's prior value and pop the stack
   `((lw $s0 (4 $sp))
-    (addi $sp $sp 8)
+    (addi $sp $sp ,(dealloc 3))
     (jr $ra)
     ,end-label))
 
-;; (λλ(1 1) λ0) λ0 is a goood test case
+
+;; convenience calculations
+(define (alloc n) (* n  -4))
+(define (dealloc n) (* n  4))
+
+;; (λλ(1 1) λ0) λ0 is a good test case
 
 ;; generate instructions to load the value bound to a deBruijn index
 ;;  into the value registers given an environment in envReg
