@@ -18,6 +18,7 @@
   [('.data) ".data\n"]
   [('syscall) "syscall\n"]
   [((cons 'seq instrs)) (print-assem instrs)]
+  [('no-instr) ""]
   [((list label ': )) #:when (symbol? label) (string-append (symbol->string label) ":\n")]
   ;; works for both instructions and directives
   [((cons instr args)) (string-append (symbol->string instr) " "
