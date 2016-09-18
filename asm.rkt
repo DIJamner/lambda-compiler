@@ -1,14 +1,12 @@
 #lang racket
 
-(provide (except-out (all-from-out racket)
-                     #%module-begin)
-         (rename-out [module-begin #%module-begin]))
+(provide asm)
 
-(define-syntax-rule (module-begin expr ...)
-  (#%module-begin
-   (define assem (print-assem '(expr ...)))
-   (display assem)
-   (provide assem)))
+(define-syntax-rule (asm . exprs)
+  (begin
+    (define assem (print-assem `exprs))
+    (display assem)
+    (provide assem)))
 
 ;; prints assembly code as a string
 (define (print-assem asm)
@@ -19,27 +17,35 @@
   [('.text) ".text\n"]
   [('.data) ".data\n"]
   [('syscall) "syscall\n"]
+  [((cons 'seq instrs)) (print-assem instrs)]
   [((list label ': )) #:when (symbol? label) (string-append (symbol->string label) ":\n")]
   ;; works for both instructions and directives
   [((cons instr args)) (string-append (symbol->string instr) " "
                                  (print-instr-args args) "\n")]
-  [(_) (error "Instruction or directive not supported.")])
+  [(_) (error "Instruction or directive not supported: " instr)])
 
 (define (token->string tok)
   (cond [(symbol? tok) (symbol->string tok)]
         [(number? tok) (number->string tok)]
         [(string? tok) (string-append "\"" tok "\"")]))
 
+(define (token? arg)
+  (or (symbol? arg) (number? arg) (string? arg)))
+
 (define (print-instr-args args)
-  (apply string-append
-         (cons (token->string (first args)) ;; the first arg is always a symbol
-               (map (λ (arg)
-                      (if (list? arg)
-                          (string-append ", "
-                                         (number->string (first arg))
-                                         "("
-                                         (symbol->string (second arg))
-                                         ")")
-                          (string-append ", "
-                                         (token->string arg)))) 
-                    (rest args)))))
+  (string-join (map (λ (arg)
+                      (match arg
+                        [(list n reg) #:when (and (number? n) (symbol? reg))
+                                      (string-append ", "
+                                                     (number->string (first arg))
+                                                     "("
+                                                     (symbol->string (second arg))
+                                                     ")")]
+                        [_ #:when (token? arg)
+                           (string-append ", " (token->string arg))]
+                        [_ (error "Failed to match: " arg)]))
+                    (rest args))
+               ", "
+               #:before-first (token->string (first args))))
+
+
