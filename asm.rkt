@@ -43,10 +43,10 @@
                                                      (symbol->string (second arg))
                                                      ")")]
                         [_ #:when (token? arg)
-                           (string-append ", " (token->string arg))]
+                           (string-append " " (token->string arg))]
                         [_ (error "Failed to match: " arg)]))
                     (rest args))
-               ", "
+               " " ;;TODO: fix commas
                #:before-first (token->string (first args))))
 
 
