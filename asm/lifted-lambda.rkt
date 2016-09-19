@@ -88,11 +88,11 @@
    (define (gen-load-var var codeAddrTarget envAddrTarget envReg)
      (cond [(= var 0) #`(seq (move #,codeAddrTarget $a1)
                              (move #,envAddrTarget $a2))]
-           [(= var 1) #`(seq (lw #,codeAddrTarget (4 ,envReg))
-                             (lw #,envAddrTarget (8 ,envReg)))]
+           [(= var 1) #`(seq (lw #,codeAddrTarget (4 #,envReg))
+                             (lw #,envAddrTarget (8 #,envReg)))]
            ;;TODO: choose address intelligently
            [(> var 1)
-              #`(seq (lw $t0 (0 ,envReg))
+              #`(seq (lw $t0 (0 #,envReg))
                      #,(gen-load-var (sub1 var)
                                      codeAddrTarget
                                      envAddrTarget
