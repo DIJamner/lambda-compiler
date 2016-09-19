@@ -3,10 +3,7 @@
 (provide asm)
 
 (define-syntax-rule (asm . exprs)
-  (begin
-    (define assem (print-assem `exprs))
-    (display assem)
-    (provide assem)))
+  (print-assem `exprs))
 
 ;; prints assembly code as a string
 (define (print-assem asm)
