@@ -26,7 +26,20 @@
                                                           (addi $sp $sp #,(alloc 3))
                                                           (sw $a0 (0 $sp))
                                                           (sw $s0 (4 $sp))
+                                                          ;;allocate environment on the heap
+                                                          (li $a0 12)
+                                                          (li $v0 9)
+                                                          syscall
+                                                          (lw $a0 (0 $sp))
+                                                          ;; store environment contents
+                                                          (sw $a0 (0 $v0))
+                                                          (sw $a1 (4 $v0))
+                                                          (sw $a2 (8 $v0))
+                                                          ;; inner environment is stored in s0
+                                                          (move $s0 $v0)
                                                           #,(compile-llexp exp 'res)
+                                                          ;; epilogue
+                                                          ;; reload the external environment
                                                           (lw $s0 (4 $sp))
                                                           (addi $sp $sp #,(dealloc 3))
                                                           (jr $ra))))
