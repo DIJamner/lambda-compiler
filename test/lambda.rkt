@@ -6,11 +6,22 @@
 (require "test-utils.rkt")
 
 ;; test cases
-(define assem-0
-  (prog ((((lambda (lambda (lambda (2 "test"))))
-           (lambda (print 0)))
-          (lambda 0))
-         (lambda (print 0)))))
-(check-equal? (run-asm assem-0) "test")
-(define assem-1 (prog (print "test\n")))
-(check-equal? (run-asm assem-1) "test\n")
+(test-case "test stuff"
+  (define assem
+    (prog ((((lambda (lambda (lambda (2 "test"))))
+             (lambda (print 0)))
+            (lambda 0))
+           (lambda (print 0)))))
+  (check-equal? (run-asm assem) "test"))
+
+(test-case "(print \"test\\n\")"
+  (define assem (prog (print "test\n")))
+  (check-equal? (run-asm assem) "test\n"))
+
+(test-case "((λλ(1 1) λ0) λ0)"
+  ;; (((lambda (lambda (1 1))) (lambda 0)) (lambda 0))
+  ;; should be an identity function
+  (define assem
+    (prog (print ((((lambda (lambda (1 1))) (lambda 0)) (lambda 0)) "a string"))))
+  (check-equal? (run-asm assem) "a string"))
+
