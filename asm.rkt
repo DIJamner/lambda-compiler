@@ -22,10 +22,7 @@
                                  (print-instr-args (first args) (rest args)) "\n")]
   [(_) (error "Instruction or directive not supported: " instr)])
 
-(define (token->string tok)
-  (cond [(symbol? tok) (symbol->string tok)]
-        [(number? tok) (number->string tok)]
-        [(string? tok) (string-append "\"" tok "\"")]))
+(define token->string ~s)
 
 (define (token? arg)
   (or (symbol? arg) (number? arg) (string? arg)))
