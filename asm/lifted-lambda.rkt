@@ -21,7 +21,7 @@
      #:with main-block (compile-llexp #'start-exp 'res)
      #:with (fun-block ...) (stx-map (λ (name exp)
                                        #`,(block #,name
-                                                 (addi $s`p $sp #,(alloc 3))
+                                                 (addi $sp $sp #,(alloc 3))
                                                  (sw $a0 (0 $sp))
                                                  (sw $s0 (4 $sp))
                                                  ;;allocate environment on the heap
