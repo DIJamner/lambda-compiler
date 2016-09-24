@@ -25,3 +25,6 @@
     (prog (print ((((lambda (lambda (1 1))) (lambda 0)) (lambda 0)) "a string"))))
   (check-equal? (run-asm assem) "a string"))
 
+(test-case "not a function"
+  (define assem (prog ("test" (lambda 0))))
+  (check-equal? (run-asm assem) "attempted to call a non-function"))
