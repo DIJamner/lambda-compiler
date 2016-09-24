@@ -1,6 +1,7 @@
 #lang racket
 
-(require (rename-in "../asm.rkt"
+(require (for-syntax syntax/parse)
+         (rename-in "../asm.rkt"
                     [asm base-asm]))
 
 (provide asm block)
@@ -10,10 +11,10 @@
             block ...))
 
 (define-syntax (block stx)
-  (syntax-case stx ()
+  (syntax-parse stx
     [(block name expr ...)
-     (with-syntax [(skip-label (car (generate-temporaries '(skip_label))))]
-       #'(quasiquote (seq (j skip-label)
-                          (name :)
-                          expr ...
-                          (skip-label :))))]))
+     #:with skip-label (car (generate-temporaries '(skip_label)))
+     #'(quasiquote (seq (j skip-label)
+                        (name :)
+                        expr ...
+                        (skip-label :)))]))
