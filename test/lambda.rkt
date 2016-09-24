@@ -18,7 +18,7 @@
   (define assem (prog (print "test\n")))
   (check-equal? (run-asm assem) "test\n"))
 
-(test-case "((λλ(1 1) λ0) λ0)"
+(test-case "(print (((λλ(1 1) λ0) λ0) \"a string\"))"
   ;; (((lambda (lambda (1 1))) (lambda 0)) (lambda 0))
   ;; should be an identity function
   (define assem
