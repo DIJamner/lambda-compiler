@@ -4,7 +4,7 @@
 
 (provide run-asm)
 
-(define-runtime-path mars "Mars4_5.jar")
+(define-runtime-path mars "mars/Mars4_5.jar")
 
 ;; run-asm : AssemblyString -> String
 (define (run-asm assembly)
