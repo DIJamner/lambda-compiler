@@ -52,7 +52,7 @@
             fun-block ...)]))
 
 (begin-for-syntax
-  (define (compile-llexp stx position)
+  (define (compile-llexp stx position) ;;TODO: position is not necessary
     (define-values [codeAddr envAddr]
       (if (equal? position 'res)
           (values '$v0 '$v1)   ;; value addresses
@@ -61,12 +61,18 @@
       [(fun-expr arg-expr)
        #:with fun-code (compile-llexp #'fun-expr 'res)
        #:with arg-code (compile-llexp #'arg-expr 'arg)
-       #`(seq fun-code
+       #`(seq (addi $sp $sp #,(alloc 3))
+              fun-code
+              (sw $v0 (0 $sp))
+              (sw $v1 (4 $sp))
               arg-code
+              (lw $v0 (0 $sp))
+              (lw $v1 (4 $sp))
               (move $a0 $v1)
               (sw $ra (8 $sp))
               (jalr $v0)
               (lw $ra (8 $sp))
+              (addi $sp $sp #,(dealloc 3))
               ;; these will sometimes be noops, but later stages can handle optimization
               (move #,codeAddr $v0)
               (move #,envAddr $v1))]
