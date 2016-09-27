@@ -1,7 +1,7 @@
 #lang racket
 
 (require (for-syntax syntax/parse)
-         (rename-in "../asm.rkt"
+         (rename-in "mips.rkt"
                     [asm base-asm]))
 
 (provide asm block)

@@ -2,7 +2,7 @@
 
 (require rackunit)
 
-(require "../asm/lambda.rkt")
+(require "../lambda/lambda.rkt")
 (require "test-utils.rkt")
 
 ;; test cases
