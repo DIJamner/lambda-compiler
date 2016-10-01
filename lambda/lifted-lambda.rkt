@@ -1,6 +1,6 @@
 #lang racket
 
-(require "../mips/asm.rkt" (for-syntax syntax/parse syntax/stx))
+(require (for-syntax syntax/parse syntax/stx))
 
 (provide prog)
 
@@ -15,11 +15,11 @@
 
 (define-syntax (prog stx)
   (syntax-parse stx
-    [(prog start-exp (name fun) ...)
+    [(prog backend start-exp (name fun) ...)
      #:with main-name (car (generate-temporaries '(main)))
      #:with (main-block ...) (compile-llexp #'start-exp)
      #:with ((code ...) ...) (stx-map compile-llexp #'(fun ...))
-     #'(asm main-name
+     #'(backend main-name
             (main-name set-null-env
                        main-block ...
                        exit)

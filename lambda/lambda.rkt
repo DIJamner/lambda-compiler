@@ -7,9 +7,9 @@
 
 (define-syntax (prog stx)
   (syntax-parse stx
-    [(prog expr)
+    [(prog backend expr)
      (define-values [main blocks] (lift-lambdas #'expr))
-     #`(lifted-prog #,main . #,blocks)]))
+     #`(lifted-prog backend #,main . #,blocks)]))
 
 (define-for-syntax (lift-lambdas expr)
   (syntax-parse expr #:literals (lambda print)

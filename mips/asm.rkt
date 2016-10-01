@@ -2,11 +2,11 @@
 
 (require "mips.rkt" (for-syntax syntax/parse syntax/stx racket))
 
-(provide asm)
+(provide mips)
 
-(define-syntax (asm stx)
+(define-syntax (mips stx)
   (syntax-parse stx
-    [(asm main (name . code) ...)
+    [(mips main (name . code) ...)
      #:with ((new-code ...) ...) (stx-map asm->mips #'((name . code) ...))
      #'(print-mips '(.text
                       (j main)
