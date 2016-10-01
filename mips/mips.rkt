@@ -1,6 +1,6 @@
 #lang racket
 
-(provide asm)
+(provide asm print-assem)
 
 (define-syntax-rule (asm . exprs)
   (print-assem `exprs))

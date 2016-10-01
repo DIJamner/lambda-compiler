@@ -1,6 +1,6 @@
 #lang racket
 (require (for-syntax syntax/parse)
-         (rename-in "../mips/lifted-lambda.rkt"
+         (rename-in "lifted-lambda.rkt"
                    [prog lifted-prog]))
 
 (provide prog)
