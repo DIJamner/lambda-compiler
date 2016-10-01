@@ -54,8 +54,7 @@
     [exit #'((li $v0 10)
              (li $a0 0)
              syscall)]
-    [(push-env val)
-     #:with (codeReg envReg) (get-registers #'val)
+    [push-env
      #'((addi $sp $sp 8) ;; allocate 2 spaces:
         (sw $a0 (0 $sp))  ;; one space for the environment
         (sw $s0 (4 $sp))  ;; one space for $s0 since it's callee-saves
@@ -67,8 +66,8 @@
         (lw $a0 (0 $sp))
         ;; store inner environment contents
         (sw $a0 (0 $v0))
-        (sw codeReg (4 $v0))
-        (sw envReg (8 $v0))
+        (sw $a1 (4 $v0))
+        (sw $a2 (8 $v0))
         ;; inner environment is stored in s0
         (move $s0 $v0))]
     [pop-env

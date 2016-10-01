@@ -23,7 +23,7 @@
             (main-name set-null-env
                        main-block ...
                        exit)
-            (name (push-env arg-val)
+            (name push-env
                   code ...
                   pop-env
                   return) ...)]))
