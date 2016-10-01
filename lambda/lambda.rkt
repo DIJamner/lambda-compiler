@@ -17,7 +17,7 @@
      #:do [(define-values [body-expr body-blocks] (lift-lambdas #'body))]
      #:with lambda-name (car (generate-temporaries '(lambda)))
      (values #'lambda-name #`((lambda-name #,body-expr) . #,body-blocks))]
-    [(fun arg) ;;TODO: never reached
+    [(fun arg)
      #:do [(define-values [fun-expr fun-blocks] (lift-lambdas #'fun))
            (define-values [arg-expr arg-blocks] (lift-lambdas #'arg))]
      #:with (arg-block ...) arg-blocks
