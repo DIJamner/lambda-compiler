@@ -8,7 +8,7 @@
   (syntax-parse stx
     [(asm main (name . code) ...)
      #:with ((new-code ...) ...) (stx-map asm->mips #'((name . code) ...))
-     #'(print-assem '(.text
+     #'(print-mips '(.text
                       (j main)
                       new-code ... ...
                       ;; library functions
@@ -73,7 +73,7 @@
         (move $s0 $v0))]
     [pop-env
      #'((lw $s0 (4 $sp));; reload the external environment
-        (addi $sp $sp -12))]
+        (addi $sp $sp -8))]
     [(set-arg val)
      #:with (codeReg envReg) (get-registers #'val)
      #'((move $a1 codeReg)

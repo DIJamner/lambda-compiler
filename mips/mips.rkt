@@ -1,12 +1,12 @@
 #lang racket
 
-(provide asm print-assem)
+(provide print-mips)
 
 (define-syntax-rule (asm . exprs)
-  (print-assem `exprs))
+  (print-mips `exprs))
 
 ;; prints assembly code as a string
-(define (print-assem asm)
+(define (print-mips asm)
   (apply string-append
          (map print-instr asm)))
 
@@ -14,7 +14,7 @@
   [('.text) ".text\n"]
   [('.data) ".data\n"]
   [('syscall) "syscall\n"]
-  [((cons 'seq instrs)) (print-assem instrs)]
+  [((cons 'seq instrs)) (print-mips instrs)]
   [('no-instr) ""]
   [((list label ': )) #:when (symbol? label) (string-append (symbol->string label) ":\n")]
   ;; works for both instructions and directives
