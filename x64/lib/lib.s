@@ -1,3 +1,4 @@
+DEFAULT REL
 section .data
 non_func_err: db "Error: tried to call a non-function", 0
 
@@ -22,16 +23,27 @@ not_a_func:
   syscall                 ; Invoke the kernel
 
 print: ; TODO: replace w/ printf?
-;  add rsp, -8             ; re-align the stack pointer
-;  mov rax, 0x2000004      ; System call write = 4
-;  mov rdi, 1              ; Write to standard out = 1
-;  mov rsi, rdx            ; the string is in the 3rd arg; move to the second arg
-;  mov rdx, 14             ; The size to write
-;  syscall                 ; Invoke the kernel
-;  mov rax, not_a_func     ; return not_a_func
-;  add rsp, 8              ; re-align the stack pointer
-;  ret                     ; return
-jmp _printf
+  add rsp, -8             ; re-align the stack pointer
+  ; calculate the length of the string
+  mov rax, 0
+  mov rdi, r8
+  mov ecx, 0xfffff   ; maximum scan length
+  cld
+  repne scasb
+  sub   ecx, 0xfffff  ; sub by the scan length
+  neg   ecx
+  dec   ecx          ; account for the null char
+  mov rdx, rcx            ; the size of the string
+  
+  mov rax, 0x2000004      ; System call write = 4
+  mov rdi, 1              ; Write to standard out = 1
+  mov rsi, r8             ; the string is in the 3rd arg; move to the second arg
+  syscall                 ; Invoke the kernel
+  mov rax, not_a_func     ; return not_a_func
+  add rsp, 8              ; re-align the stack pointer
+  ret                     ; return
+;  mov rdi, r8
+;  jmp _printf
 
 %define ENV_SIZE 3 * 8  ; the number of bytes in an environment
 %define outerEnv(reg) [reg]
@@ -44,17 +56,17 @@ new_env:
   ;; store the arguments on the stack (realigns stack)
   push rdx ; envptr
   push rsi ;; codeptr
-  push rdi ;; env
+  push r8 ;; env
 retry_new_env:                ; skip prologue on retry
-  mov rdi, ENV_SIZE           ; allocate a heap entry for one environment             
+  mov r8, ENV_SIZE           ; allocate a heap entry for one environment             
   call _malloc
   cmp rax, 0                  ; check to see that a result was actually allocated
   je gc_new_env               ; if no memory could be allocated, garbage collect then try again
   ;; retrieve arguments
-  pop rdi
+  pop r8
   pop rsi
   pop rdx
-  mov outerEnv(rax), rdi      ; store the environment in the first enviroment slot
+  mov outerEnv(rax), r8      ; store the environment in the first enviroment slot
   mov outerArgCode(rax), rsi  ; store the argument code pointer in the second enviroment slot
   mov outerArgEnv(rax), rdx   ; store the argument env pointer in the third enviroment slot
   ret                         ; return the new env

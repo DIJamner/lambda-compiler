@@ -1,3 +1,4 @@
+DEFAULT REL
 section .text
 global collect
 
