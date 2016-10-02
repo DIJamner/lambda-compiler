@@ -1,6 +1,7 @@
 DEFAULT REL
 section .data
-non_func_err: db "Error: tried to call a non-function", 0
+non_func_err: db 10, "Error: tried to call a non-function", 10 ;NOTE: not null-terminated!
+non_func_err_len equ $ - non_func_err
 
 section .text
 extern _malloc
@@ -11,18 +12,18 @@ global new_env
 ;; from gc.s
 extern collect
   
-not_a_func:
-  add rsp, -8             ; re-align the stack pointer
-  mov rax, 0x2000004      ; System call write = 4
-  mov rdi, 1              ; Write to standard out = 1
-  mov rsi, non_func_err   ; the string is in the 3rd arg; move to the second arg
-  mov rdx, 14             ; The size to write TODO: replace w/ correct size, write to stderr
-  syscall                 ; Invoke the kernel
-  mov rax, 0x2000001      ; System call number for exit = 1
-  mov rdi, 1              ; Exit failure = 1
-  syscall                 ; Invoke the kernel
+not_a_func: ;TODO: accept an argument listing the type that was used in function position?
+  add rsp, -8               ; re-align the stack pointer
+  mov rax, 0x2000004        ; System call write = 4
+  mov rdi, 2                ; Write to standard err = 2
+  mov rsi, non_func_err     ; the string is in the 3rd arg; move to the second arg
+  mov rdx, non_func_err_len ; The size to write
+  syscall                   ; Invoke the kernel
+  mov rax, 0x2000001        ; System call number for exit = 1
+  mov rdi, 1                ; Exit failure = 1
+  syscall                   ; Invoke the kernel
 
-print: ; TODO: replace w/ printf?
+print:
   add rsp, -8             ; re-align the stack pointer
   ; calculate the length of the string
   mov rax, 0
@@ -34,7 +35,7 @@ print: ; TODO: replace w/ printf?
   neg   ecx
   dec   ecx          ; account for the null char
   mov rdx, rcx            ; the size of the string
-  
+  ; call write
   mov rax, 0x2000004      ; System call write = 4
   mov rdi, 1              ; Write to standard out = 1
   mov rsi, r8             ; the string is in the 3rd arg; move to the second arg
