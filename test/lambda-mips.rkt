@@ -10,9 +10,9 @@
 (test-case "test stuff"
   (define assem
     (prog mips ((((lambda (lambda (lambda (2 "test"))))
-             (lambda (print 0)))
-            (lambda 0))
-           (lambda (print 0)))))
+                  (lambda (print 0)))
+                 (lambda 0))
+                (lambda (print 0)))))
   (check-equal? (run-asm assem) "test"))
 
 (test-case "(print \"test\\n\")"
