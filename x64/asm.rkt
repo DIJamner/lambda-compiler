@@ -40,13 +40,13 @@
                                 push-env pop-env
                                 set-arg
                                 push pop
-                                call return
+                                call enter return
                                 load-and-bind
                                 load
                                 env
                                 env-get)
     [set-null-env #'((mov rbp 0))] ;; rbp contains the inner environment
-    [exit #'((mov rax 0x2000000)      ; System call number for exit = 0 on OS X
+    [exit #'((mov rax 0x2000001)      ; System call number for exit = 1 on OS X
              (mov rdi 0)              ; Exit failure = 0
              syscall)]                ; Invoke the kernel
     [push-env
@@ -82,7 +82,7 @@
      #'((mov rax fn)
         (mov rdx rbp)
         follow-links ...)]
-    [(load str-lit:str)
+    [(load str-lit:str) ;;TODO: parse string for special chars
      #:with label (car (generate-temporaries '(string)))
      #'((section .data)
         (label :)
@@ -95,7 +95,7 @@
      (if (zero? (syntax->datum #'n))
          #'((mov rax rsi)
             (mov rdx r8))
-         #'((mov r10 rbpError: tried to call a non-func)
+         #'((mov r10 rbp)
             follow-links ...
             (mov rax [r10 + 8])
             (mov rdx [r10 + 16])))]
