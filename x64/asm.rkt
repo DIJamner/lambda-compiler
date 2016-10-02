@@ -1,6 +1,6 @@
 #lang racket
 
-(require (for-syntax syntax/parse syntax/stx racket))
+(require "x64.rkt" (for-syntax syntax/parse syntax/stx racket))
 
 (provide x64)
 
@@ -18,7 +18,7 @@
   (syntax-parse stx
     [(x64 main (name . code) ...)
      #:with ((new-code ...) ...) (stx-map asm->x64 #'((name . code) ...))
-     #''((section .text)
+     #'(print-x64 (section .text)
          (global _main)
          (extern print)
          (extern new_env)
@@ -32,7 +32,6 @@
     [(name code ...)
      #:with ((x64-code ...) ...) (stx-map compile-asm-statement #'(code ...))
      #'((name :)
-        (add rsp -8) ;; align the stack pointer. "return" handles the inverse.
         x64-code ... ...)]))
 
 (define-for-syntax (compile-asm-statement stx)
@@ -75,26 +74,28 @@
     [call
      #'((mov rdi rdx) ;;TODO: can I just overwrite rdi like this?
         (call rax))]
-    [return #'(ret)]
+    [enter #'((add rsp -8))] ;; align the stack pointer on function entry
+    [return #'((add rsp 8) ;; de-align stack pointer before exit
+               ret)]
     [(load-and-bind fn:id (env n:nat))
      #:with (follow-links ...) (make-list (syntax->datum #'n) #'(mov rdx [rdx]))
      #'((mov rax fn)
-        (mov rdx rdp)
+        (mov rdx rbp)
         follow-links ...)]
     [(load str-lit:str)
      #:with label (car (generate-temporaries '(string)))
      #'((section .data)
         (label :)
-        (db "Error: tried to call a non-function" 0)
+        (db str-lit 0)
         (section .text)
         (mov rax not_a_func)
         (mov rdx label))]
     [(load (env-get n:nat))
-     #:with (follow-links ...) (make-list (syntax->datum #'n) #'(lw r10 (0 r10)))
+     #:with (follow-links ...) (make-list (syntax->datum #'n) #'(mov r10 [r10]))
      (if (zero? (syntax->datum #'n))
          #'((mov rax rsi)
             (mov rdx r8))
-         #'((mov r10 rdp)
+         #'((mov r10 rbpError: tried to call a non-func)
             follow-links ...
             (mov rax [r10 + 8])
             (mov rdx [r10 + 16])))]
