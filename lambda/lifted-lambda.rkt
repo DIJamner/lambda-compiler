@@ -23,10 +23,12 @@
             (main-name set-null-env
                        main-block ...
                        exit)
-            (name push-env
-                  code ...
-                  pop-env
-                  return) ...)]))
+            (name enter    ;; perform any necessary setup for entering a new function body
+                  push-env ;; push this function's argument onto the environment
+                  code ... ;; perform the body of the function
+                  pop-env  ;; remove this function's argument from the environment
+                  return)  ;; return from the function (return value should be in ret-val)
+            ...)]))
 
 (define-for-syntax (compile-llexp stx)
     (syntax-parse stx
