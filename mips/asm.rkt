@@ -45,7 +45,7 @@
                                 push-env pop-env
                                 set-arg
                                 push pop
-                                call return
+                                call enter return
                                 load-and-bind
                                 load
                                 env
