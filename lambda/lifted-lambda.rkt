@@ -23,6 +23,7 @@
 ;; arg-val[IRVal]
 ;; env[(Listof IRVal)]
 ;; stack[(Listof IRVal)]
+;; program-counter[Nat]
 ;; callstack[(Listof (List Identifier Nat))]
 ;; stdout[String]
 
@@ -36,12 +37,14 @@
 ;; - enter: perform any necessary operations after entering a function
 ;; - push-env: push arg-val onto the environment
 ;; - pop-env: remove the top element of the environment
-;; - return: pop the current function off of the call stack and resume the previous function at the return address
+;; - return: pop the current function off of the call stack, set the program counter to the return address
+;;             and resume the function at the top of the stack
 ;; - call: push ret-val and the address of the next statement on the callstack and execute the code at ret-val
 ;; - (push IRVar): add the value in IRVar to the top of the stack
 ;; - (pop IRVar): set IRVar to be the top value of the stack and remove it from the stack 
 ;; - (load IRVar IRVal): set IRVar to IRVal
-
+;;
+;; When an IRStmnt is executed, it increments the program-counter
 
 ;; An IRVar is one of:
 ;; - ret-val
