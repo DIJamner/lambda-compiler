@@ -23,23 +23,24 @@
 ;; arg-val[IRVal]
 ;; env[(Listof IRVal)]
 ;; stack[(Listof IRVal)]
-;; program-counter[Nat]
-;; callstack[(Listof (List Identifier Nat))]
+;; callstack[(Listof IRCont)]
 ;; stdout[String]
 
 ;; An IRProg is a (Backend Identifier IRFunc ...)
 
 ;; An IRFunc is a (Identifier IRStmnt ...)
 
+;; An IRCont is a (Listof IRStmnt)
+;;   An IRCont represents a continuation
+
 ;; An IRStmnt is one of:
 ;; - set-null-env: sets the inner environment to the null pointer
 ;; - exit: terminates the program
-;; - enter: perform any necessary operations after entering a function
+;; - enter: perform any necessary setup after entering a function
 ;; - push-env: push arg-val onto the environment
 ;; - pop-env: remove the top element of the environment
-;; - return: pop the current function off of the call stack, set the program counter to the return address
-;;             and resume the function at the top of the stack
-;; - call: push ret-val and the address of the next statement on the callstack and execute the code at ret-val
+;; - return: pop the top of the callstack and execute it
+;; - call: push the rest of the code in this function on the callstack and execute the code at ret-val
 ;; - (push IRVar): add the value in IRVar to the top of the stack
 ;; - (pop IRVar): set IRVar to be the top value of the stack and remove it from the stack 
 ;; - (load IRVar IRVal): set IRVar to IRVal
