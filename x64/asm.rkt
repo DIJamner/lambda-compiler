@@ -41,7 +41,6 @@
                                 set-arg
                                 push pop
                                 call enter return
-                                load-and-bind
                                 load
                                 env
                                 env-get)
@@ -77,7 +76,7 @@
     [enter #'((add rsp -8))] ;; align the stack pointer on function entry
     [return #'((add rsp 8) ;; de-align stack pointer before exit
                ret)]
-    [(load-and-bind fn:id (env n:nat))
+    [(load (bind fn:id (env n:nat)))
      #:with (follow-links ...) (make-list (syntax->datum #'n) #'(mov rdx [rdx]))
      #'((mov rax fn)
         (mov rdx rbp)

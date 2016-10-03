@@ -46,7 +46,6 @@
                                 set-arg
                                 push pop
                                 call enter return
-                                load-and-bind
                                 load
                                 env
                                 env-get)
@@ -96,7 +95,7 @@
         (addi $sp $sp -4))]
     [enter #'()]
     [return #'((jr $ra))]
-    [(load-and-bind fn:id (env n:nat))
+    [(load (bind fn:id (env n:nat)))
      #:with (follow-links ...) (make-list (syntax->datum #'n) #'(lw $v1 (0 $v1)))
      #'((la $v0 fn)
         (move $v1 $s0)
