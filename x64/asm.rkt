@@ -38,10 +38,10 @@
   (syntax-parse stx #:datum-literals (set-null-env
                                 exit
                                 push-env pop-env
-                                set-arg
                                 push pop
                                 call enter return
                                 load
+                                arg-val ret-val
                                 env
                                 env-get)
     [set-null-env #'((mov rbp 0))] ;; rbp contains the inner environment
@@ -58,7 +58,7 @@
      ;; replace the outer environment
      #'((pop rbp)
         (add rsp 8))]
-    [(set-arg val)
+    [(load arg-val val)
      #:with (codeReg envReg) (get-registers #'val)
      #'((mov rsi codeReg)
         (mov r8 envReg))]
@@ -76,12 +76,12 @@
     [enter #'((add rsp -8))] ;; align the stack pointer on function entry
     [return #'((add rsp 8) ;; de-align stack pointer before exit
                ret)]
-    [(load (bind fn:id (env n:nat)))
+    [(load ret-val (bind fn:id (env n:nat)))
      #:with (follow-links ...) (make-list (syntax->datum #'n) #'(mov rdx [rdx]))
      #'((mov rax fn)
         (mov rdx rbp)
         follow-links ...)]
-    [(load str-lit:str) ;;TODO: parse string for special chars
+    [(load ret-val str-lit:str) ;;TODO: parse string for special chars
      #:with label (car (generate-temporaries '(string)))
      #'((section .data)
         (label :)
@@ -89,7 +89,7 @@
         (section .text)
         (mov rax not_a_func)
         (mov rdx label))]
-    [(load (env-get n:nat))
+    [(load ret-val (env-get n:nat))
      #:with (follow-links ...) (make-list (syntax->datum #'n) #'(mov r10 [r10]))
      (if (zero? (syntax->datum #'n))
          #'((mov rax rsi)

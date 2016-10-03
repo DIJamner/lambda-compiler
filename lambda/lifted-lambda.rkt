@@ -37,8 +37,7 @@
 ;; - return: exit a function and resume after the location where it was called
 ;; - (push IRVar): add the value in IRVar to the top of the stack
 ;; - (pop IRVar): set IRVar to be the top value of the stack and remove it from the stack 
-;; - (set-arg IRVar): set arg-val to the value in IRVar
-;; - (load IRVal): set ret-val to be IRVal
+;; - (load IRVar IRVal): set IRVar to IRVal
 
 ;; An IRVar is one of:
 ;; - ret-val
@@ -48,6 +47,7 @@
 ;; - (bind Identifier Env): make a closure with the code at Identifier and the environment Env
 ;; - String: a String literal
 ;; - (env-get Nat): gets the IRVal Nat levels into the inner environment
+;; - IRVar: gets the value stored in the IRVar
 
 ;; An Env is a (env Nat)
 ;;   An Env represents the environment that closes over all arguments
@@ -78,9 +78,9 @@
        #'(fun-code ...
           (push ret-val)
           arg-code ...
-          (set-arg ret-val)
+          (load arg-val ret-val)
           (pop ret-val)
           call)]
-      [index:nat #'((load (env-get index)))]
-      [func:id #'((load (bind func (env 0))))]
-      [string-lit:str #'((load string-lit))]))
+      [index:nat #'((load ret-val (env-get index)))]
+      [func:id #'((load ret-val (bind func (env 0))))]
+      [string-lit:str #'((load ret-val string-lit))]))

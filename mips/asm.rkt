@@ -43,10 +43,9 @@
   (syntax-parse stx #:datum-literals (set-null-env
                                 exit
                                 push-env pop-env
-                                set-arg
+                                load arg-val ret-val
                                 push pop
                                 call enter return
-                                load
                                 env
                                 env-get)
     [set-null-env #'((move $s0 $zero))]
@@ -72,7 +71,7 @@
     [pop-env
      #'((lw $s0 (4 $sp));; reload the external environment
         (addi $sp $sp -8))]
-    [(set-arg val)
+    [(load arg-val val)
      #:with (codeReg envReg) (get-registers #'val)
      #'((move $a1 codeReg)
         (move $a2 envReg))]
@@ -95,12 +94,12 @@
         (addi $sp $sp -4))]
     [enter #'()]
     [return #'((jr $ra))]
-    [(load (bind fn:id (env n:nat)))
+    [(load ret-val (bind fn:id (env n:nat)))
      #:with (follow-links ...) (make-list (syntax->datum #'n) #'(lw $v1 (0 $v1)))
      #'((la $v0 fn)
         (move $v1 $s0)
         follow-links ...)]
-    [(load str-lit:str)
+    [(load ret-val str-lit:str)
      #:with label (car (generate-temporaries '(string)))
      #'(.data
         (.align 2)
@@ -109,7 +108,7 @@
         .text
         (la $v0 not_a_func)
         (la $v1 label))]
-    [(load (env-get n:nat))
+    [(load ret-val (env-get n:nat))
      #:with (follow-links ...) (make-list (syntax->datum #'n) #'(lw $t1 (0 $t1)))
      (if (zero? (syntax->datum #'n))
          #'((move $v0 $a1)
