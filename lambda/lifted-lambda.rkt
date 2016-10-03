@@ -23,6 +23,8 @@
 ;; arg-val[IRVal]
 ;; env[(Listof IRVal)]
 ;; stack[(Listof IRVal)]
+;; callstack[(Listof (List Identifier Nat))]
+;; stdout[String]
 
 ;; An IRProg is a (Backend Identifier IRFunc ...)
 
@@ -31,13 +33,15 @@
 ;; An IRStmnt is one of:
 ;; - set-null-env: sets the inner environment to the null pointer
 ;; - exit: terminates the program
-;; - enter: set all necessary state upon entering a function
+;; - enter: perform any necessary operations after entering a function
 ;; - push-env: push arg-val onto the environment
 ;; - pop-env: remove the top element of the environment
-;; - return: exit a function and resume after the location where it was called
+;; - return: pop the current function off of the call stack and resume the previous function at the return address
+;; - call: push ret-val and the address of the next statement on the callstack and execute the code at ret-val
 ;; - (push IRVar): add the value in IRVar to the top of the stack
 ;; - (pop IRVar): set IRVar to be the top value of the stack and remove it from the stack 
 ;; - (load IRVar IRVal): set IRVar to IRVal
+
 
 ;; An IRVar is one of:
 ;; - ret-val
@@ -51,7 +55,7 @@
 
 ;; An Env is a (env Nat)
 ;;   An Env represents the environment that closes over all arguments
-;;     with deBruijn index >= Nat
+;;     with deBruijn index >= Nat and subtracts Nat from their indices
 
 (define-syntax (prog stx)
   (syntax-parse stx
