@@ -43,7 +43,7 @@
 ;; - call: push the rest of the code in this function on the callstack and execute the code at ret-val
 ;; - (push IRVar): add the value in IRVar to the top of the stack
 ;; - (pop IRVar): set IRVar to be the top value of the stack and remove it from the stack 
-;; - (load IRVar IRVal): set IRVar to IRVal
+;; - (load IRVar IRExp): set IRVar to IRVal
 ;;
 ;; When an IRStmnt is executed, it increments the program-counter
 
@@ -54,6 +54,9 @@
 ;; An IRVal is one of:
 ;; - (bind Identifier Env): make a closure with the code at Identifier and the environment Env
 ;; - String: a String literal
+
+;; An IRExp is one of:
+;; - IRVal
 ;; - (env-get Nat): gets the IRVal Nat levels into the inner environment
 ;; - IRVar: gets the value stored in the IRVar
 
