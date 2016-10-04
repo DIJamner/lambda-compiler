@@ -54,22 +54,24 @@ print:
 ; new_env(env, arg-code, arg-env)
 ; invariant: preserves the contents of rdi, rsi, rdx across call TODO: change, calling convention changed
 new_env:
+  add rsp, -8                 ; re-align the stack pointer (TODO: Why is this correct?)
   ;; store the arguments on the stack (realigns stack)
-  push rdx ; envptr
+  push rdx ; env
   push rsi ;; codeptr
-  push r8 ;; env
+  push r8 ;; envptr
 retry_new_env:                ; skip prologue on retry
   mov r8, ENV_SIZE           ; allocate a heap entry for one environment             
-  call _malloc
+  call _malloc 
   cmp rax, 0                  ; check to see that a result was actually allocated
   je gc_new_env               ; if no memory could be allocated, garbage collect then try again
   ;; retrieve arguments
   pop r8
   pop rsi
   pop rdx
-  mov outerEnv(rax), r8      ; store the environment in the first enviroment slot
+  mov outerEnv(rax), rdx      ; store the environment in the first enviroment slot
   mov outerArgCode(rax), rsi  ; store the argument code pointer in the second enviroment slot
-  mov outerArgEnv(rax), rdx   ; store the argument env pointer in the third enviroment slot
+  mov outerArgEnv(rax), r8   ; store the argument env pointer in the third enviroment slot
+  add rsp, 8
   ret                         ; return the new env
 gc_new_env:
   call collect                ; there is not enough memory; perform garbage collection
