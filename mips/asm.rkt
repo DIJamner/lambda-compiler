@@ -92,7 +92,7 @@
         (jalr $v0)
         (lw $ra (0 $sp))
         (addi $sp $sp -4))]
-    [enter #'()]
+    [(enter lbl) #'()]
     [return #'((jr $ra))]
     [(load ret-val (bind fn:id (env n:nat)))
      #:with (follow-links ...) (make-list (syntax->datum #'n) #'(lw $v1 (0 $v1)))

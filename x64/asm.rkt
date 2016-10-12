@@ -73,7 +73,8 @@
     [call
      #'((mov rdi rdx) ;;TODO: can I just overwrite rdi like this?
         (call rax))]
-    [enter #'((add rsp -8))] ;; align the stack pointer on function entry
+    [(enter lbl) #`((add rsp -8) ;; align the stack pointer on function call
+                    (#,(jump-label #'lbl) :))] 
     [return #'((add rsp 8) ;; de-align stack pointer before exit
                ret)]
     [(load ret-val (bind fn:id (env n:nat)))
@@ -104,3 +105,10 @@
   (syntax-parse stx #:datum-literals (ret-val arg-val)
     [arg-val #'(rsi r8)]
     [ret-val #'(rax rdx)]))
+
+(define-for-syntax (jump-label lbl)
+  (datum->syntax lbl
+                 (string->symbol
+                  (string-append
+                   (symbol->string (syntax-e lbl)) "_jmp"))))
+

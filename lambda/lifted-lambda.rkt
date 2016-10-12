@@ -74,7 +74,7 @@
             (main-name set-null-env
                        main-block ...
                        exit)
-            (name enter    ;; perform any necessary setup for entering a new function body
+            (name (enter name) ;; perform any necessary setup for entering a new function body
                   push-env ;; push this function's argument onto the environment
                   code ... ;; perform the body of the function
                   pop-env  ;; remove this function's argument from the environment
