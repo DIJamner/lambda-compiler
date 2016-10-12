@@ -13,19 +13,19 @@
                   (lambda (print 0)))
                  (lambda 0))
                 (lambda (print 0)))))
-  (check-equal? (run-asm assem) "test"))
+  (check-equal? (run-mips assem) "test"))
 
 (test-case "(print \"test\\n\")"
   (define assem (prog mips (print "test\n")))
-  (check-equal? (run-asm assem) "test\n"))
+  (check-equal? (run-mips assem) "test\n"))
 
 (test-case "(print (((λλ(1 1) λ0) λ0) \"a string\"))"
   ;; (((lambda (lambda (1 1))) (lambda 0)) (lambda 0))
   ;; should be an identity function
   (define assem
     (prog mips (print ((((lambda (lambda (1 1))) (lambda 0)) (lambda 0)) "a string"))))
-  (check-equal? (run-asm assem) "a string"))
+  (check-equal? (run-mips assem) "a string"))
 
 (test-case "not a function"
   (define assem (prog mips ("test" (lambda 0))))
-  (check-equal? (run-asm assem) "attempted to call a non-function"))
+  (check-equal? (run-mips assem) "attempted to call a non-function"))
