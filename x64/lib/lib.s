@@ -5,12 +5,11 @@ non_func_err_len equ $ - non_func_err
 
 section .text
 extern _malloc
-extern _printf
 global print
 global not_a_func
 global new_env
-;; from gc.s
-extern collect
+;; from Rust libgc
+extern _get_next
   
 not_a_func: ;TODO: accept an argument listing the type that was used in function position?
   add rsp, -8               ; re-align the stack pointer
@@ -52,18 +51,16 @@ print:
 %define outerArgEnv(reg) [reg + 16]
 
 ; new_env(env, arg-code, arg-env)
-; invariant: preserves the contents of rdi, rsi, rdx across call TODO: change, calling convention changed
+; invariant: preserves the contents of rdx, rsi, r8 across call
 new_env:
   add rsp, -8                 ; re-align the stack pointer (TODO: Why is this correct?)
-  ;; store the arguments on the stack (realigns stack)
+  ;; store the arguments on the stack
   push rdx ; env
   push rsi ;; codeptr
   push r8 ;; envptr
 retry_new_env:                ; skip prologue on retry
   mov r8, ENV_SIZE           ; allocate a heap entry for one environment             
-  call _malloc 
-  cmp rax, 0                  ; check to see that a result was actually allocated
-  je gc_new_env               ; if no memory could be allocated, garbage collect then try again
+  call _get_next 
   ;; retrieve arguments
   pop r8
   pop rsi
@@ -73,6 +70,3 @@ retry_new_env:                ; skip prologue on retry
   mov outerArgEnv(rax), r8   ; store the argument env pointer in the third enviroment slot
   add rsp, 8
   ret                         ; return the new env
-gc_new_env:
-  call collect                ; there is not enough memory; perform garbage collection
-  jmp retry_new_env           ; try to allocate again

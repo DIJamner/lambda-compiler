@@ -1,0 +1,7 @@
+[package]
+name = "gc"
+version = "0.1.0"
+authors = ["Dustin Jamner <dijamner@me.com>"]
+
+[dependencies]
+lazy_static = "0.2.1"

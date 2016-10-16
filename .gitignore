@@ -1,3 +1,4 @@
 compiled
 *~
 *.o
+x64/lib/gc/target

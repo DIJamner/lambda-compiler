@@ -5,6 +5,7 @@ use std::sync::Mutex;
 use std::mem::transmute;
 use std::mem::size_of;
 use std::ops::DerefMut;
+use std::ops::Deref;
 
 
 #[repr(C)]
@@ -45,8 +46,8 @@ const NURSERY_ENV_INIT : NurseryEnvInit = NurseryEnvInit {
     free: true
 };
 
-//number of blocks in the nursery
-const NURSERY_SIZE : usize = 10000;//TODO: choose size
+//number of environments in the nursery
+const NURSERY_SIZE : usize = 1000;//TODO: choose size
 
 struct Nursery {
     nursery_array : [NurseryEnv; NURSERY_SIZE], 
@@ -57,21 +58,25 @@ impl Nursery {
     
     // gets the next free environment in the nursery if there is one
     fn get_next(&mut self) -> Option<&Env> {
-        let mut result = NURSERY_SIZE;
-        let mut idx = self.nursery_index;
+        // index of the first possibly free environemnt
+        let start_index = self.nursery_index;
         
-        while idx < NURSERY_SIZE {
-            let ref env = self.nursery_array[idx];
-            if env.free { 
-                result = idx;
+        // assume we've gone to the end of the array unless we know otherwise
+        self.nursery_index = NURSERY_SIZE;
+        
+        // for every possibly-free environment, if it's free we'll use its index
+        for idx in start_index..NURSERY_SIZE {
+            if self.nursery_array[idx].free { 
+                self.nursery_index = idx;
+                break;
             }
         }
         
-        self.nursery_index = idx;
-        
-        if  idx < NURSERY_SIZE {
-            let ref mut res = self.nursery_array[idx];
+        if self.nursery_index < NURSERY_SIZE {
+            let ref mut res = self.nursery_array[self.nursery_index];
             res.free = false;
+            // this index is no longer free, so move to the next one
+            self.nursery_index += 1;
             Some(&res.env)
         } else {
             None   
@@ -101,13 +106,19 @@ lazy_static! {
     };
 }
 
+//gets the next free environment and panics if there is none
+//Contract: exactly the contents of the cells *e, *(e + 8), and *(e + 16) may be modified.
+//              However, none of them may be freed.
+#[no_mangle]
+pub unsafe extern "C" fn get_next() -> usize {
+    get_next_private()
+}
 
-//gets the next free environment if there is one
-fn get_next() -> &'static Env {
+fn get_next_private() -> usize {
     let mut guard = NURSERY.lock().unwrap();
     let mut nursery = guard.deref_mut();
     match nursery.get_next() {
-        Some(e) => e,
-        None => get_next()
+        Some(e) => unsafe { transmute(e) },
+        None => panic!("No more free environments!"),
     }
 }
