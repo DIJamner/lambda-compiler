@@ -20,10 +20,12 @@
      #:with ((new-code ...) ...) (stx-map asm->x64 #'((name . code) ...))
      #'(print-x64 (section .text)
          (global _main)
+         (extern set_init_sp)
          (extern print)
          (extern new_env)
          (extern not_a_func)
          (_main :)
+         (call set_init_sp)
          (jmp main)
          new-code ... ...)]))
 

@@ -1,3 +1,4 @@
+#![feature(asm)]
 #[macro_use(lazy_static, __lazy_static_create)]
 extern crate lazy_static;
 
@@ -5,13 +6,13 @@ use std::sync::Mutex;
 use std::mem::transmute;
 use std::mem::size_of;
 use std::ops::DerefMut;
-use std::ops::Deref;
+use std::slice;
 
 
 #[repr(C)]
 struct Env {
     outer_env : Option<Box<Env>>, 
-    arg_code : i64, 
+    arg_code : usize, 
     arg_env : Option<Box<Env>>
 }
 
@@ -27,20 +28,16 @@ struct NurseryEnv {
 #[repr(C)]
 struct NurseryEnvInit {
     outer_env : usize, 
-    arg_code : i64, 
+    arg_code : usize, 
     arg_env : usize,
     mark : bool,
     free : bool
 }
 
-// guarantee that the two structs have the same size
-// TODO
-//assert_eq!(size_of::<NurseryEnv>(), size_of::<NurseryEnvInit>());
-
 //default empty NurseryEnvInit
 const NURSERY_ENV_INIT : NurseryEnvInit = NurseryEnvInit { 
     outer_env: 0usize, 
-    arg_code: 0, 
+    arg_code: 0usize, 
     arg_env: 0usize, 
     mark: false,
     free: true
@@ -87,11 +84,15 @@ impl Nursery {
 // we will grow the old_gen whenever it gets full
 //TODO: investigate overhead
 lazy_static! {
-    static ref NURSERY : Mutex<Nursery> = Mutex::new(Nursery{
-        // this is the 
-        nursery_array : unsafe { transmute([NURSERY_ENV_INIT; NURSERY_SIZE]) },
-        nursery_index : 0
-    });
+    static ref NURSERY : Mutex<Nursery> = {
+        // guarantee that the two structs have the same size
+        assert_eq!(size_of::<NurseryEnv>(), size_of::<NurseryEnvInit>());
+        Mutex::new(Nursery {
+            // this is the most reasonable way to initialize
+            nursery_array : unsafe { transmute([NURSERY_ENV_INIT; NURSERY_SIZE]) },
+            nursery_index : 0
+        })
+    };
     // the numeric address of the start of the nursery
     static ref NURSERY_START : usize = {
         let guard = NURSERY.lock().unwrap();
@@ -117,8 +118,49 @@ pub unsafe extern "C" fn get_next() -> usize {
 fn get_next_private() -> usize {
     let mut guard = NURSERY.lock().unwrap();
     let mut nursery = guard.deref_mut();
-    match nursery.get_next() {
-        Some(e) => unsafe { transmute(e) },
-        None => panic!("No more free environments!"),
+    let temp = match nursery.get_next() {
+            Some(e) => Some(unsafe { transmute(e) }),
+            None => None
+    };
+    if let Some(envptr) = temp {
+        envptr
+    } else {
+        mark_and_sweep(nursery);
+        if let Some(e) = nursery.get_next() {
+            unsafe { transmute(e) }
+        } else {
+            panic!("Mark and sweep failed to find more free environments!")
+        }
     }
 }
+
+fn mark_and_sweep(nursery : &mut Nursery) {
+    //TODO
+    panic!("No more free environments!")
+}
+
+// function that retrieves the stored initial stack pointer
+extern {
+    fn get_init_sp() -> usize;
+}
+
+// Returns a reference to the stack as a slice
+#[cfg(any(target_arch = "x86_64"))]
+fn get_stack<'a>() -> &'a [usize] {
+    let stackptr : *const usize;
+    let initsp : usize; 
+    unsafe {
+        // set stackptr to the stack pointer
+        asm!("nop" : "={rsp}"(stackptr));
+        // set initsp to the initial stack pointer
+        initsp = get_init_sp();
+        // calculate the length of the stack and return a slice representing the stack
+        slice::from_raw_parts(stackptr, 
+            initsp.saturating_sub(transmute(stackptr)).wrapping_div(size_of::<usize>()))
+    }
+}
+
+// other platforms: TODO
+//#[cfg(not(any(target_arch = "x86_64")))]
+//fn get_stack() -> &[usize] {...}
+

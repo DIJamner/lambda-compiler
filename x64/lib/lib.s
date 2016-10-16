@@ -1,16 +1,27 @@
 DEFAULT REL
-section .data
-non_func_err: db 10, "Error: tried to call a non-function", 10 ;NOTE: not null-terminated!
-non_func_err_len equ $ - non_func_err
-
-section .text
-extern _malloc
 global print
 global not_a_func
 global new_env
 ;; from Rust libgc
 extern _get_next
-  
+;; for Rust libgc
+global _get_init_sp
+global set_init_sp
+;; TODO: combine w/ Rust lib?
+section .data
+non_func_err: db 10, "Error: tried to call a non-function", 10 ;NOTE: not null-terminated!
+non_func_err_len equ $ - non_func_err
+init_sp: resq 1
+section .text
+
+_get_init_sp:
+  mov rax, [init_sp]
+  ret
+
+set_init_sp:
+  mov [init_sp], rsp
+  ret
+
 not_a_func: ;TODO: accept an argument listing the type that was used in function position?
   add rsp, -8               ; re-align the stack pointer
   mov rax, 0x2000004        ; System call write = 4
