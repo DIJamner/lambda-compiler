@@ -1,4 +1,5 @@
 #![feature(asm)]
+#![feature(box_patterns)]
 #[macro_use(lazy_static, __lazy_static_create)]
 extern crate lazy_static;
 
@@ -9,6 +10,7 @@ use std::ops::DerefMut;
 use std::slice;
 
 
+// Contract: outer_env/arg_env must be treated as volitile
 #[repr(C)]
 struct Env {
     outer_env : Option<Box<Env>>, 
@@ -19,7 +21,7 @@ struct Env {
 #[repr(C)]
 struct NurseryEnv {
     env : Env,
-    mark : bool,
+    marked : bool,
     free : bool
 }
 
@@ -30,7 +32,7 @@ struct NurseryEnvInit {
     outer_env : usize, 
     arg_code : usize, 
     arg_env : usize,
-    mark : bool,
+    marked : bool,
     free : bool
 }
 
@@ -39,12 +41,12 @@ const NURSERY_ENV_INIT : NurseryEnvInit = NurseryEnvInit {
     outer_env: 0usize, 
     arg_code: 0usize, 
     arg_env: 0usize, 
-    mark: false,
+    marked: false,
     free: true
 };
 
 //number of environments in the nursery
-const NURSERY_SIZE : usize = 1000;//TODO: choose size
+const NURSERY_SIZE : usize = 10;//TODO: choose size
 
 struct Nursery {
     nursery_array : [NurseryEnv; NURSERY_SIZE], 
@@ -54,7 +56,8 @@ struct Nursery {
 impl Nursery {
     
     // gets the next free environment in the nursery if there is one
-    fn get_next(&mut self) -> Option<&Env> {
+    fn get_next(&mut self) -> Option<&NurseryEnv> {
+        
         // index of the first possibly free environemnt
         let start_index = self.nursery_index;
         
@@ -74,11 +77,89 @@ impl Nursery {
             res.free = false;
             // this index is no longer free, so move to the next one
             self.nursery_index += 1;
-            Some(&res.env)
+            Some(res)
         } else {
             None   
         }
     }
+    
+    // perform a mark-and-sweep garbage collection on the nursery
+    fn mark_and_sweep(&mut self) {
+        
+        let stack = get_stack();
+        for ptr in stack.iter() {
+            if let Some(idx) = compute_nursery_index(*ptr) {
+                self.mark_env(idx);
+            }
+        }
+        
+        self.sweep();
+        
+        //TODO: temp
+        let mut count  = 0;
+        for e in self.nursery_array.iter() {
+            if e.free { count = count + 1; }
+        }
+        
+        println!("Performed garbage collection! Collected {} envs.", count);
+    }
+    
+    // recursively mark the environment and its children
+    fn mark_env(&mut self, index : usize) {
+        println!("test!");
+        let outer_idx_opt : Option<usize>;
+        let arg_idx_opt : Option<usize>;
+        // we get the environment at the given index, mark it, then check its branches
+        // if either one points to a nursery environment, we store its index to check
+        {
+            let ref mut env = self.nursery_array[index];
+            if !env.marked {
+                env.marked = true;
+                if let Some(box ref e) = env.env.outer_env {
+                    outer_idx_opt = compute_nursery_index(unsafe { transmute(e) });
+                } else {
+                    outer_idx_opt = None;
+                }
+                if let Some(box ref e) = env.env.arg_env {
+                    arg_idx_opt = compute_nursery_index(unsafe { transmute(e) });
+                } else {
+                    arg_idx_opt = None;
+                }
+            } else {
+                outer_idx_opt = None;
+                arg_idx_opt = None;
+            }
+        }
+        // checks must be outside of the lifetime of env
+        if let Some(idx) = outer_idx_opt {
+            self.mark_env(idx);
+        }
+        if let Some(idx) = arg_idx_opt {
+           self.mark_env(idx);
+        }
+    }
+    
+    fn sweep(&mut self) {
+        for idx in NURSERY_SIZE..0 {
+            let ref mut env = self.nursery_array[idx];
+            if env.marked {
+                env.marked = false;
+            } else {
+                env.free = true;
+                self.nursery_index = idx;
+            }
+        }
+    }
+    
+}
+
+// computes the index of an environemnt from its pointer
+fn compute_nursery_index(ptr : usize) -> Option<usize> {
+    // get the memory offset from the first nursery env
+    let offset = ptr - *NURSERY_START;
+    // get the index of the environment at that offset
+    let idx = offset / size_of::<NurseryEnv>();
+    if idx < NURSERY_SIZE && offset % idx == 0 { Some(idx) } else { None }
 }
 
 // we will grow the old_gen whenever it gets full
@@ -98,12 +179,6 @@ lazy_static! {
         let guard = NURSERY.lock().unwrap();
         let nursery = guard.deref();
         unsafe { transmute(&nursery.nursery_array[0]) }
-    };
-    // the numeric address at the end of the nursery
-    static ref NURSERY_END : usize = 
-        match NURSERY_START.checked_add(size_of::<[NurseryEnv; NURSERY_SIZE - 1]>()) {
-            Some(x) => x,
-            None => panic!("Nursery end address computed to be outside of addressable range.")
     };
 }
 
@@ -125,7 +200,7 @@ fn get_next_private() -> usize {
     if let Some(envptr) = temp {
         envptr
     } else {
-        mark_and_sweep(nursery);
+        nursery.mark_and_sweep();
         if let Some(e) = nursery.get_next() {
             unsafe { transmute(e) }
         } else {
@@ -134,10 +209,6 @@ fn get_next_private() -> usize {
     }
 }
 
-fn mark_and_sweep(nursery : &mut Nursery) {
-    //TODO
-    panic!("No more free environments!")
-}
 
 // function that retrieves the stored initial stack pointer
 extern {
@@ -156,7 +227,7 @@ fn get_stack<'a>() -> &'a [usize] {
         initsp = get_init_sp();
         // calculate the length of the stack and return a slice representing the stack
         slice::from_raw_parts(stackptr, 
-            initsp.saturating_sub(transmute(stackptr)).wrapping_div(size_of::<usize>()))
+            initsp.saturating_sub(transmute(stackptr)) / size_of::<usize>()) //TODO: off-by-1?!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     }
 }
 
