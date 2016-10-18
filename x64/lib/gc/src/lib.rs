@@ -1,5 +1,6 @@
 #![feature(asm)]
 #![feature(box_patterns)]
+#![feature(box_syntax)]
 #[macro_use(lazy_static, __lazy_static_create)]
 extern crate lazy_static;
 
@@ -88,25 +89,15 @@ impl Nursery {
         
         let stack = get_stack();
         for ptr in stack.iter() {
-            if let Some(idx) = compute_nursery_index(*ptr) {
+            if let Some(idx) = self.compute_nursery_index(*ptr) {
                 self.mark_env(idx);
             }
         }
-        
         self.sweep();
-        
-        //TODO: temp
-        let mut count  = 0;
-        for e in self.nursery_array.iter() {
-            if e.free { count = count + 1; }
-        }
-        
-        println!("Performed garbage collection! Collected {} envs.", count);
     }
     
     // recursively mark the environment and its children
     fn mark_env(&mut self, index : usize) {
-        println!("test!");
         let outer_idx_opt : Option<usize>;
         let arg_idx_opt : Option<usize>;
         // we get the environment at the given index, mark it, then check its branches
@@ -116,12 +107,12 @@ impl Nursery {
             if !env.marked {
                 env.marked = true;
                 if let Some(box ref e) = env.env.outer_env {
-                    outer_idx_opt = compute_nursery_index(unsafe { transmute(e) });
+                    outer_idx_opt = Some(unsafe { transmute(e) });
                 } else {
                     outer_idx_opt = None;
                 }
                 if let Some(box ref e) = env.env.arg_env {
-                    arg_idx_opt = compute_nursery_index(unsafe { transmute(e) });
+                    arg_idx_opt = Some(unsafe { transmute(e) });
                 } else {
                     arg_idx_opt = None;
                 }
@@ -131,16 +122,21 @@ impl Nursery {
             }
         }
         // checks must be outside of the lifetime of env
-        if let Some(idx) = outer_idx_opt {
-            self.mark_env(idx);
+        if let Some(ptr) = outer_idx_opt {
+            if let Some(idx) = self.compute_nursery_index(ptr) {
+                self.mark_env(idx);
+            }
         }
-        if let Some(idx) = arg_idx_opt {
-           self.mark_env(idx);
+        if let Some(ptr) = arg_idx_opt {
+            if let Some(idx) = self.compute_nursery_index(ptr) {
+                self.mark_env(idx);
+            }
         }
     }
     
     fn sweep(&mut self) {
-        for idx in NURSERY_SIZE..0 {
+        for idx in (0..NURSERY_SIZE).rev() {
+            println!("checking");
             let ref mut env = self.nursery_array[idx];
             if env.marked {
                 env.marked = false;
@@ -151,15 +147,28 @@ impl Nursery {
         }
     }
     
-}
-
-// computes the index of an environemnt from its pointer
-fn compute_nursery_index(ptr : usize) -> Option<usize> {
-    // get the memory offset from the first nursery env
-    let offset = ptr - *NURSERY_START;
-    // get the index of the environment at that offset
-    let idx = offset / size_of::<NurseryEnv>();
-    if idx < NURSERY_SIZE && offset % idx == 0 { Some(idx) } else { None }
+    fn get_start(&self) -> usize {
+        unsafe { transmute(&self.nursery_array[0]) }
+    }
+    
+    // computes the index of an environemnt from its pointer
+    fn compute_nursery_index(&self, ptr : usize) -> Option<usize> {
+        // get the memory offset from the first nursery env
+        // TODO: make checked sub
+        if let Some(offset) = ptr.checked_sub(self.get_start()) {
+            // get the index of the environment at that offset
+            let idx = offset / size_of::<NurseryEnv>();
+            if idx < self.nursery_array.len() 
+                        && offset % size_of::<NurseryEnv>() == 0 {
+                Some(idx) 
+            } else { 
+                None 
+            }
+        } else {
+            None
+        }
+    }
+    
 }
 
 // we will grow the old_gen whenever it gets full
@@ -173,12 +182,6 @@ lazy_static! {
             nursery_array : unsafe { transmute([NURSERY_ENV_INIT; NURSERY_SIZE]) },
             nursery_index : 0
         })
-    };
-    // the numeric address of the start of the nursery
-    static ref NURSERY_START : usize = {
-        let guard = NURSERY.lock().unwrap();
-        let nursery = guard.deref();
-        unsafe { transmute(&nursery.nursery_array[0]) }
     };
 }
 
