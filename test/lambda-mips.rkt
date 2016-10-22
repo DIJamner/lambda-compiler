@@ -9,10 +9,10 @@
 ;; test cases
 (test-case "test stuff"
   (define assem
-    (prog mips ((((lambda (lambda (lambda (2 "test"))))
-                  (lambda (print 0)))
-                 (lambda 0))
-                (lambda (print 0)))))
+    (prog mips ((((lambda (x) (lambda (y) (lambda (z) (x "test"))))
+                  (lambda (x) (print x)))
+                 (lambda (x) x))
+                (lambda (x) (print x)))))
   (check-equal? (run-mips assem) "test"))
 
 (test-case "(print \"test\\n\")"
@@ -23,9 +23,9 @@
   ;; (((lambda (lambda (1 1))) (lambda 0)) (lambda 0))
   ;; should be an identity function
   (define assem
-    (prog mips (print ((((lambda (lambda (1 1))) (lambda 0)) (lambda 0)) "a string"))))
+    (prog mips (print ((((lambda (x) (lambda (y) (x x))) (lambda (x) x)) (lambda (x) x)) "a string"))))
   (check-equal? (run-mips assem) "a string"))
 
 (test-case "not a function"
-  (define assem (prog mips ("test" (lambda 0))))
+  (define assem (prog mips ("test" (lambda (x) x))))
   (check-equal? (run-mips assem) "attempted to call a non-function"))
