@@ -3,13 +3,15 @@
          (rename-in "lifted-lambda.rkt"
                    [prog lifted-prog]))
 
-(provide prog)
+(provide prog unify-functions)
 
 (define-syntax (prog stx)
   (syntax-parse stx
-    [(prog backend expr)
+    [(prog backend #:lambda-opt (opt opt-rest ...) lang-opt ... expr)
+     #`(opt backend #:lambda-opt (opt-rest ...) new-expr)]
+    [(prog backend (~optional (~seq #:lambda-opt ())) lang-opt ... expr)
      (define-values [main blocks] (lift-lambdas #'expr))
-     #`(lifted-prog backend #,main . #,blocks)]))
+     #`(lifted-prog backend lang-opt ... #,main . #,blocks)]))
 
 (define-for-syntax (lift-lambdas expr)
   (syntax-parse expr #:literals (lambda print)
@@ -27,3 +29,5 @@
     [n:nat (values #'n #'())]
     [str:str (values #'str #'())]
     [print (values #'print #'())]))
+
+;;TODO: define optimization macro
