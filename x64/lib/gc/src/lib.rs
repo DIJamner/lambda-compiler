@@ -189,11 +189,7 @@ lazy_static! {
 //Contract: exactly the contents of the cells *e, *(e + 8), and *(e + 16) may be modified.
 //              However, none of them may be freed.
 #[no_mangle]
-pub unsafe extern "C" fn get_next() -> usize {
-    get_next_private()
-}
-
-fn get_next_private() -> usize {
+pub extern "C" fn get_next() -> usize {
     let mut guard = NURSERY.lock().unwrap();
     let mut nursery = guard.deref_mut();
     let temp = match nursery.get_next() {
