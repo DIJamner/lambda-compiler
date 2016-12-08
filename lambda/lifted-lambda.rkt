@@ -114,7 +114,7 @@
      #:with ((uname ufun) ...) (map (lambda (p) (list (car p) (cdr p)))
                                     (hash->list (hash-remove new-function-map '_main)))
      #:with new-start-exp (hash-ref new-function-map '_main)
-     #'(prog backend #:lifted-opt (opt-rest ...) start-exp (uname ufun) ...)]))
+     #'(prog backend #:lifted-opt (opt-rest ...) new-start-exp (uname ufun) ...)]))
 
 (define-for-syntax (simplify-if-possible fun fun-map)
   (define equal-fun (find-equal-function fun-map fun))
