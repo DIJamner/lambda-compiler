@@ -28,5 +28,5 @@
                          ((lambda ((lambda 0) 0))
                           ((lambda ((lambda 0) 0)) "test")))))))))))))))))))))
 (define assem2 (prog x64 ((print "test") "test2")))
-(display assem)
-;(run-x64 assem)
+;(display assem)
+(display (run-x64 assem))

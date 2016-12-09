@@ -1,4 +1,6 @@
-language: c
+language: rust
+rust:
+  - nightly
 
 sudo: false
 
