@@ -136,7 +136,6 @@ impl Nursery {
     
     fn sweep(&mut self) {
         for idx in (0..NURSERY_SIZE).rev() {
-            println!("checking");
             let ref mut env = self.nursery_array[idx];
             if env.marked {
                 env.marked = false;
