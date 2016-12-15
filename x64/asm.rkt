@@ -12,6 +12,7 @@
 ;; rsi: 2nd arg (arg code ptr)
 ;; r8: 3rd arg (arg env ptr)
 ;; rbp: callee-saves (inner env)
+;; Compiler-used regs: r10
 
 
 (define-syntax (x64 stx)
